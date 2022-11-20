@@ -68,7 +68,12 @@ int get_file_size(char *filename) {
 
     return file_stats.st_size;
 }
-
+/*
+    Resolver memory leaks, instalar static-libasan, não permitir
+    sample_len maiores que o ficheiro, se o sample_len for o máximo
+    apenas apresentar uma sample, resolver o problema em que o máximo
+    permitido para sample_len é o tamanho do ficheiro - 1
+*/
 int main(int argc, char *argv[]) {
     if (argc < 4) {
         fprintf(stderr, "%s: missing arguments", argv[0]);
@@ -114,10 +119,9 @@ int main(int argc, char *argv[]) {
             }
         }
         
+        fseek(fp, jump, SEEK_SET);
+        fgets(line, sample_len, fp);
         while(1) {
-            fseek(fp, jump, SEEK_SET);
-            fgets(line, sample_len, fp);
-
             int pos = check_unwanted(line);
             if (pos == -1) {
                 break;
@@ -132,7 +136,6 @@ int main(int argc, char *argv[]) {
             fgets(next_line, sample_len - (pos + 1), fp);
             strcat(line, next_line);
             
-            break;
         }
         
         printf(">%s<\n", line);
