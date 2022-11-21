@@ -15,9 +15,9 @@ int main(int argc, char *argv[]) {
 
     int i;
     for (i = 1; i < argc; i++) {
-        strncpy(old_ext, argv[i], strlen(new_ext) + 1);
-        strncpy(new_ext, strtok(argv[i], "."), strlen(new_ext) + 1);
-        strncat(new_ext, ".epub", strlen(new_ext) + 1);
+        strncpy(old_ext, argv[i], sizeof(char) * strlen(argv[i]));
+        strncpy(new_ext, strtok(argv[i], "."), sizeof(char) * strlen(argv[i]) + 1);
+        strncat(new_ext, ".epub", sizeof(char) * strlen(argv[i]) + 1);
 
         if ((pid = fork()) == 0) {
             if (execlp("pandoc", "pandoc", old_ext, "-o", new_ext, NULL) == -1) {
