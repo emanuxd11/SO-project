@@ -19,6 +19,7 @@ int main (int argc, char *argv[]) {
     if((pid = fork()) < 0) {
         perror("fork");
     } else if (pid == 0) {
+        /* this is child */
         printf("READING - Opening...\n");
         int fd = open("myfifo", O_RDONLY);
         printf("READING - Opened\n");
@@ -33,6 +34,7 @@ int main (int argc, char *argv[]) {
         printf("READING - Closed\n");
 
     } else {
+        /* this is parent */
         printf("WRITING - Opening...\n");
         int fd = open("myfifo", O_WRONLY);
         printf("WRITING - Opened\n");

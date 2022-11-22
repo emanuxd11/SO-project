@@ -25,16 +25,22 @@ int main(int argc, char *argv[]) {
 
     // ciclo dos forks
     for (int i = 1, j = 2; i < argc; i++, j++) {
+        // caso o nome do ficheiro seja demasiado
+        // grande, não é convertido e compactado
         if (strlen(argv[i]) > CMDLEN - 2) {
             fprintf(stderr, "file number %d won't be" 
             "added because filename is too large", i);
             continue;
         }
-
+        
+        // conversão de .txt para .epub
         strcpy(old_ext, argv[i]);
         strcpy(new_ext, strtok(argv[i], "."));
         strcat(new_ext, ".epub");
+
+        // alocar memória para o próximo nome de ficheiro        
         epub_files[j] = malloc(CMDLEN * sizeof(char));
+        // adiconar ao array o ficheiro com a extensão epub
         strcpy(epub_files[j], new_ext);
 
         if ((pid = fork()) < 0) {
@@ -82,6 +88,8 @@ int main(int argc, char *argv[]) {
             argv[0], strerror(errno));
         }
     }
+
+    
 
     // exit gracefully xD
     exit(EXIT_SUCCESS);
