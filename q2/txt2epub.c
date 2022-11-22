@@ -8,12 +8,20 @@
 #define CMDLEN 256
 
 int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "%s: expected at least 1 argument, none given", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
     pid_t pid;
 
     // para guardar o nome do ficheiro com a
-    // antiga extensão e com a nova extensão
+    // antiga extensão, com a nova extensão
+    // e sem extensão para o título do .epub
     char old_ext[CMDLEN];
     char new_ext[CMDLEN];
+    char no_ext[CMDLEN];
+    char meta_title[CMDLEN + 9];
 
     // alocar espaço para argc ficheiros, o nome do zip e o próprio comando
     char **epub_files;
@@ -32,10 +40,20 @@ int main(int argc, char *argv[]) {
             "added because filename is too large", i);
             continue;
         }
-        
-        // conversão de .txt para .epub
-        strcpy(old_ext, argv[i]);
-        strcpy(new_ext, strtok(argv[i], "."));
+
+        // precisamos de guardar o nome antigo
+        // por causa do strtok
+        char tmp_old[CMDLEN];
+        strcpy(tmp_old, argv[i]);
+
+        // guardar o nome do ficheiro sem qualquer
+        // extensão e adicioná-lo a uma string
+        strcpy(no_ext, strtok(argv[i], "."));
+        sprintf(meta_title, "title=\"%s\"", no_ext);
+
+        // alteração da extensão de .txt para .epub
+        strcpy(old_ext, tmp_old);
+        strcpy(new_ext, no_ext);
         strcat(new_ext, ".epub");
 
         // alocar memória para o próximo nome de ficheiro        
@@ -49,7 +67,9 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         } else if (pid == 0) {
             // processo filho
-            if (execlp("pandoc", "pandoc", old_ext, "-o", new_ext, NULL) == -1) {
+            fprintf(stdout, "[pid%d] converting %s...\n", getpid(), old_ext); // isto não imprime
+            if (execlp("pandoc", "pandoc", old_ext, "-o", new_ext, 
+            "--metadata", meta_title, NULL) == -1) {
                 perror("execlp");
                 exit(EXIT_FAILURE);
             }
@@ -89,7 +109,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    
+    // free da memória alocada dinamicamente
+    for (int i = 2; i < argc + 1; i++) {
+        free(epub_files[i]);
+    }
+    free(epub_files);
 
     // exit gracefully xD
     exit(EXIT_SUCCESS);

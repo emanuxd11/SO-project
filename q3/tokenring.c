@@ -43,6 +43,5 @@ int main (int argc, char *argv[]) {
         fifoarr[i - 1] = fifoname;
     }
 
-
     free(fifoarr);
 }
