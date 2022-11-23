@@ -2,8 +2,12 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <unistd.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <string.h>
 
 #define NAME_LEN 256
 
@@ -25,7 +29,8 @@ int main (int argc, char *argv[]) {
     char fifoname[NAME_LEN];
     char **fifoarr;
     fifoarr = malloc(n * sizeof(char *));
-    for (unsigned int i = 1; i <= n; i++) {
+
+    for (unsigned int i = 1, j = 0; i <= n; i++, j++) {
         if (i == n) {
             sprintf(fifoname, "pipe%dto%d", i, 1);
         } else {
@@ -40,8 +45,50 @@ int main (int argc, char *argv[]) {
         }
 
         /* if everything goes well add the fifo name to the array */
-        fifoarr[i - 1] = fifoname;
+        fifoarr[j] = malloc((strlen(fifoname) + 1) * sizeof(char));
+        strcpy(fifoarr[j], fifoname);
     }
 
+
+    pid_t pid;
+    int fd_write;
+    int fd_read;
+
+    for(unsigned int i = 1; i <= n; i++){
+        if((pid = fork() < 0)){
+            perror("fork");
+        }
+        else if(pid == 0){
+            /*Child Process*/
+            sprintf(fifoarr[i], "fifo%dto%d", i, i+1);
+            if((fd_write = open(fifoarr[i],O_WRONLY)) < 0){
+                perror("fd_write error");
+            }
+        }
+        else{
+            /*Parent process*/
+            sprintf(fifoarr[i], "fifo%dto%d", i, i+1);
+            if((fd_read = open(fifoarr[i], O_RDONLY)) < 0){
+                perror("fd_read error");
+            }
+        }
+    }
+
+    /*while(1){
+        if(pid == 0){
+            //Child Process
+
+        }
+        else if(pid > 0){
+            //Parent Process
+        }
+        else{
+            perror("fork");
+        }
+    }*/
+    for(unsigned int i = 0; i < n; i++){
+        printf("%s\n", fifoarr[i]);
+        free(fifoarr[i]);
+    }
     free(fifoarr);
 }
