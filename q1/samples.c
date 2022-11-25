@@ -21,7 +21,7 @@ int check_unwanted(char *line) {
         return -2;
     }
 
-    for(int i = 0; i < strlen(line); i++) {
+    for(size_t i = 0; i < strlen(line); i++) {
         if (line[i] == '\n') {
             line[i] = ' ';
             return i;
@@ -68,6 +68,29 @@ int get_file_size(char *filename) {
 
     return file_stats.st_size;
 }
+
+/*
+    Obter o valor do salto. Retorna esse valor, ou termina
+    o programa, libertando toda a memória dinamicamente
+    alocada.
+*/
+int get_jump(int file_size, int sample_len, vector jumps) {
+    int jump;
+
+    while (1) {
+        jump = random() % (file_size - (sample_len - 1));
+        int status = check_repeated(jumps, jump);
+        if (status == 0) {
+            return jump;
+        } else if (status == -1) {
+            free(jumps.elems);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return -1;
+}
+
 /*
     Resolver memory leaks, instalar static-libasan, não permitir
     sample_len maiores que o ficheiro, se o sample_len for o máximo
@@ -77,65 +100,93 @@ int get_file_size(char *filename) {
 int main(int argc, char *argv[]) {
     if (argc < 4) {
         fprintf(stderr, "%s: missing arguments", argv[0]);
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
+    // seed para o random
     srandom(0);
+    
     FILE *fp;
     char *filename = argv[1];
-    int n_samples = atoi(argv[2]), sample_len = atoi(argv[3]) + 1;
+    int n_samples = atoi(argv[2]);
+
+    // verificações
+    if (n_samples < 0) {
+        fprintf(stderr, "%s: expected at least 1 sample, %d given", argv[0], n_samples);
+        exit(EXIT_FAILURE);
+    }
+
+    int sample_len = atoi(argv[3]) + 1;
+    if (sample_len < 0) {
+        fprintf(stderr, "%s: expected at least 1 sample, %d given", argv[0], n_samples);
+        exit(EXIT_FAILURE);
+    }
 
     if ((fp = fopen(filename, "r")) == NULL) {
         fprintf(stderr, "Error: %s", strerror(errno));
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
-    char line[sample_len];
-    int jump;
-    vector jumps;
-
+    // tamanho do ficheiro
     int file_size = get_file_size(filename);
     if (file_size == -1) {
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
+    } else if (file_size < sample_len) {
+        fprintf(stderr, "%s: sample length can't be bigger than file size, "
+        "defaulting sample length to file size and number of samples to 1\n\n", argv[0]);
+        sample_len = file_size;
+        n_samples = 1;
+    } else {
+        int possible_samples = file_size - sample_len + 1;
+        printf("sample size = %d and file size = %d\n", sample_len, file_size);
+        if (n_samples > possible_samples) {
+            fprintf(stderr, "%s: %d samples aren't possible, defaulting to %d\n\n", argv[0], 
+                n_samples, possible_samples);
+            n_samples = possible_samples;
+        }
     }
 
-    jumps.elems = malloc(sizeof(int) * n_samples);
+    // criação do vetor jumps para guardar todos os saltos
+    int jump;
+    vector jumps;
+    jumps.elems = malloc(sizeof(jumps.elems) * n_samples);
     jumps.size = 0;
     if (jumps.elems == NULL) {
         fprintf(stderr, "Error: couldn't allocate memory: malloc");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
-    for(int i = 0; i < n_samples; i++) {
-        while(1) {
-            jump = random() % (file_size - sample_len);
-            
-            int status = check_repeated(jumps, jump);
-            if (status == 0) {
-                break;
-            } else if (status == -1) {
-                free(jumps.elems);
-                return EXIT_FAILURE;
-            }
+    // alocação de memória para cada linha do ficheiro
+    // com base em sample_len
+    char *line = malloc(sizeof(char) * sample_len);
+
+    for (int i = 0; i < n_samples; i++) {
+        if (sample_len == file_size) {
+            jump = 0;
+        } else {
+            jump = get_jump(file_size, sample_len, jumps);
         }
-        
+    
         fseek(fp, jump, SEEK_SET);
         fgets(line, sample_len, fp);
-        while(1) {
+        while (1) {
             int pos = check_unwanted(line);
             if (pos == -1) {
                 break;
             }
+
             if (pos == -2) {
                 free(jumps.elems);
                 fprintf(stderr, "Error: invalid line");
-                return EXIT_FAILURE;
+                exit(EXIT_FAILURE);
             }
 
-            char next_line[sample_len];
+            char *next_line = malloc(sizeof(char) * (sample_len + 1));
             fgets(next_line, sample_len - (pos + 1), fp);
             strcat(line, next_line);
-            
+
+            // free da variável local
+            free(next_line);
         }
         
         printf(">%s<\n", line);
@@ -144,7 +195,9 @@ int main(int argc, char *argv[]) {
         jumps.size++;
     }
 
+    // free da memória dinamica
+    free(line);
     free(jumps.elems);
     fclose(fp);
-    return EXIT_SUCCESS;
+    exit(EXIT_SUCCESS);
 }
