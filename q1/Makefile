@@ -1,6 +1,6 @@
 samples:
 	gcc samples.c -o samples
-samples-debug:
+debug:
 	gcc samples.c -o samples -fsanitize=address -Wall -Wextra -pedantic
 clean:
 	rm samples
