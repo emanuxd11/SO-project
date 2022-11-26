@@ -1,5 +1,7 @@
-final:
-	gcc tokenring.c -o tokenring -fsanitize=address -static-libasan -Wall -Wextra -pedantic
+tokenring:
+	gcc tokenring.c -o tokenring
+debug:
+	gcc tokenring.c -o tokenring -fsanitize=address -Wall -Wextra -pedantic
 clean:
 	rm tokenring 
 

@@ -91,12 +91,6 @@ int get_jump(int file_size, int sample_len, vector jumps) {
     return -1;
 }
 
-/*
-    Resolver memory leaks, instalar static-libasan, não permitir
-    sample_len maiores que o ficheiro, se o sample_len for o máximo
-    apenas apresentar uma sample, resolver o problema em que o máximo
-    permitido para sample_len é o tamanho do ficheiro - 1
-*/
 int main(int argc, char *argv[]) {
     if (argc < 4) {
         fprintf(stderr, "%s: missing arguments", argv[0]);
@@ -138,9 +132,8 @@ int main(int argc, char *argv[]) {
         n_samples = 1;
     } else {
         int possible_samples = file_size - sample_len + 1;
-        printf("sample size = %d and file size = %d\n", sample_len, file_size);
         if (n_samples > possible_samples) {
-            fprintf(stderr, "%s: %d samples aren't possible, defaulting to %d\n\n", argv[0], 
+            fprintf(stderr, "%s: %d samples aren't possible, searching for %d instead\n\n", argv[0], 
                 n_samples, possible_samples);
             n_samples = possible_samples;
         }

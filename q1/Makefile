@@ -1,4 +1,6 @@
-final:
-	gcc samples.c -o samples -fsanitize=address -static-libasan -Wall -Wextra -pedantic
+samples:
+	gcc samples.c -o samples
+samples-debug:
+	gcc samples.c -o samples -fsanitize=address -Wall -Wextra -pedantic
 clean:
 	rm samples
