@@ -29,7 +29,7 @@ int __roda_do_preco_certo_69(double p) {
     return 0;
 }
 
-void my_handler(void) {
+void my_handler(int) {
     //unlinks fifos
     for(int i = 0; i < n; i++) {
            unlink(fifoarr[i]);
