@@ -20,7 +20,7 @@ char **fifoarr;
 int n;
 
 // Checks probability
-int __roda_do_preco_certo_69(double p) {
+int probability(double p) {
     double random = (double)rand() / RAND_MAX;
     if (random <= p) {
         return 1;
@@ -29,7 +29,7 @@ int __roda_do_preco_certo_69(double p) {
     return 0;
 }
 
-void my_handler(int) {
+void my_handler(int s) {
     //unlinks fifos
     for(int i = 0; i < n; i++) {
            unlink(fifoarr[i]);
@@ -152,7 +152,7 @@ int main (int argc, char *argv[]) {
                 }
 
                 // Checks probability, enters if it is whitin bounds
-                if (__roda_do_preco_certo_69(p)) {
+                if (probability(p)) {
                     fprintf(stdout, "[p%d] lock on token (val = %d)\n", i, token);
                     sleep(t);
                     fprintf(stdout, "[p%d] unlocked token\n", i);
